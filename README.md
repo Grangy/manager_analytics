@@ -64,12 +64,36 @@ node scripts/import-orders.js /path/to/orders.xlsx
 # Разработка
 npm run dev
 
-# Продакшен
+# Продакшен (сначала собрать!)
 npm run build
 npm start
 ```
 
-Приложение доступно на [http://localhost:3000](http://localhost:3000).
+Приложение доступно на [http://localhost:3000](http://localhost:3000). Продакшен — на порту 7732.
+
+### Деплой на сервер
+
+После `git clone` и `npm install` на сервере:
+
+```bash
+npx prisma migrate deploy   # создать БД
+npm run import              # импорт из Excel (если есть файл)
+npm run build               # собрать приложение
+npm start                   # запуск на порту 7732
+```
+
+### Автоимпорт заказов из 1C (cron 21:00)
+
+Файлы заказов поступают в `/home/ftp1c/upload/` в 20:00. Для автоматической обработки в 21:00:
+
+1. Добавить в cron: `crontab -e`
+   ```
+   0 21 * * * cd /var/www/manager_analytics && npm run process-orders >> /var/log/process-orders.log 2>&1
+   ```
+
+2. Переменная `UPLOAD_DIR` (опционально): по умолчанию `/home/ftp1c/upload`
+
+3. Скрипт: ищет `.zip`, переименовывает (фикс кириллицы CP1251), распаковывает, импортирует Excel в БД, сохраняет в `upload/archive/`, оставляет только 5 последних архивов.
 
 ## Структура проекта
 
@@ -79,7 +103,8 @@ npm start
 │   ├── analytics.db     # SQLite (создаётся миграцией, не в git)
 │   └── migrations/
 ├── scripts/
-│   └── import-orders.js # Импорт из Excel
+│   ├── import-orders.js       # Ручной импорт из Excel
+│   └── process-uploaded-orders.js  # Cron: импорт из upload (1C)
 ├── src/
 │   ├── app/
 │   │   ├── login/       # Страница входа
@@ -103,6 +128,7 @@ npm start
 | `npm run build`  | Сборка для продакшена       |
 | `npm run start`  | Запуск продакшен-сервера    |
 | `npm run import` | Импорт заказов из Excel     |
+| `npm run process-orders` | Импорт из папки загрузок (1C, cron) |
 | `npm run test`   | Запуск тестов               |
 | `npm run lint`   | Проверка линтером           |
 
