@@ -1,0 +1,28 @@
+// Prisma schema for Manager Analytics - SQLite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./analytics.db"
+}
+
+model Order {
+  id              Int      @id @default(autoincrement())
+  orderNumber     String   // Номер заказа (AВУТ-001042)
+  date            DateTime // Дата
+  time            String   // Время (9:42:17)
+  amount          Float    // Сумма
+  client          String?  // Клиент
+  status          String?  // Текущее состояние
+  manager         String   // Менеджер
+  comment         String?  // Комментарий
+  businessRegion  String?  // Бизнес-регион
+  link            String?  // Ссылка
+  siteOrderNumber String?  // Номер заказа сайт
+  createdAt       DateTime @default(now())
+
+  @@unique([orderNumber, date])
+}
