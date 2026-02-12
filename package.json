@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 7732",
     "lint": "eslint",
     "import": "node scripts/import-orders.js",
     "test": "node --test --import tsx tests/working-hours.test.ts"
