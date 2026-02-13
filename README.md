@@ -129,6 +129,8 @@ npm start                   # запуск на порту 7732
 | `npm run start`  | Запуск продакшен-сервера    |
 | `npm run import` | Импорт заказов из Excel     |
 | `npm run process-orders` | Импорт из папки загрузок (1C, cron) |
+| `npm run reimport-archive` | Переимпорт из архивов (исправление кодировки) |
+| `npm run fix-encoding` | Попытка исправить кодировку в БД |
 | `npm run test`   | Запуск тестов               |
 | `npm run lint`   | Проверка линтером           |
 

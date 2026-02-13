@@ -11,6 +11,8 @@
     "lint": "eslint",
     "import": "node scripts/import-orders.js",
     "process-orders": "node scripts/process-uploaded-orders.js",
+    "fix-encoding": "node scripts/fix-encoding.js",
+    "reimport-archive": "node scripts/reimport-from-archive.js",
     "test": "node --test --import tsx tests/working-hours.test.ts"
   },
   "dependencies": {

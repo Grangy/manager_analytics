@@ -63,17 +63,9 @@ function parseAmount(val) {
   return isNaN(num) ? 0 : num;
 }
 
-function fixCyrillicCell(val) {
-  if (val == null || val === '') return val;
-  const s = String(val).trim();
-  if (!s) return val;
-  try {
-    const bytes = Buffer.from(s, 'latin1');
-    const decoded = iconv.decode(bytes, 'win1251');
-    return decoded;
-  } catch {
-    return val;
-  }
+function cell(val) {
+  if (val == null || val === '') return '';
+  return String(val).trim();
 }
 
 async function importFromExcel(excelPath) {
@@ -86,21 +78,20 @@ async function importFromExcel(excelPath) {
   let skipped = 0;
 
   for (const row of rows) {
-    const orderNumber = fixCyrillicCell(row[0])?.trim() || null;
+    const orderNumber = cell(row[0]) || null;
     if (!orderNumber) {
       skipped++;
       continue;
     }
 
-    const date = parseDate(row[2] != null ? fixCyrillicCell(row[2]) : row[2]);
+    const date = parseDate(row[2]);
     if (!date) {
       skipped++;
       continue;
     }
 
     const amount = parseAmount(row[5]);
-    const managerRaw = row[9] != null ? fixCyrillicCell(row[9]) : null;
-    const manager = (managerRaw && String(managerRaw).trim()) || 'Unknown';
+    const manager = cell(row[9]) || 'Unknown';
     if (!manager) {
       skipped++;
       continue;
@@ -112,27 +103,27 @@ async function importFromExcel(excelPath) {
         create: {
           orderNumber,
           date,
-          time: row[4] ? String(fixCyrillicCell(row[4]) || '').trim() : '',
+          time: cell(row[4]),
           amount,
-          client: row[6] ? String(fixCyrillicCell(row[6]) || '').trim() || null : null,
-          status: row[8] ? String(fixCyrillicCell(row[8]) || '').trim() || null : null,
+          client: cell(row[6]) || null,
+          status: cell(row[8]) || null,
           manager,
-          comment: row[10] ? String(fixCyrillicCell(row[10]) || '').trim() || null : null,
-          businessRegion: row[11] ? String(fixCyrillicCell(row[11]) || '').trim() || null : null,
-          link: row[12] ? String(fixCyrillicCell(row[12]) || '').trim() || null : null,
-          siteOrderNumber: row[13] ? String(fixCyrillicCell(row[13]) || '').trim() || null : null,
+          comment: cell(row[10]) || null,
+          businessRegion: cell(row[11]) || null,
+          link: cell(row[12]) || null,
+          siteOrderNumber: cell(row[13]) || null,
         },
         update: {
           date,
-          time: row[4] ? String(fixCyrillicCell(row[4]) || '').trim() : '',
+          time: cell(row[4]),
           amount,
-          client: row[6] ? String(fixCyrillicCell(row[6]) || '').trim() || null : null,
-          status: row[8] ? String(fixCyrillicCell(row[8]) || '').trim() || null : null,
+          client: cell(row[6]) || null,
+          status: cell(row[8]) || null,
           manager,
-          comment: row[10] ? String(fixCyrillicCell(row[10]) || '').trim() || null : null,
-          businessRegion: row[11] ? String(fixCyrillicCell(row[11]) || '').trim() || null : null,
-          link: row[12] ? String(fixCyrillicCell(row[12]) || '').trim() || null : null,
-          siteOrderNumber: row[13] ? String(fixCyrillicCell(row[13]) || '').trim() || null : null,
+          comment: cell(row[10]) || null,
+          businessRegion: cell(row[11]) || null,
+          link: cell(row[12]) || null,
+          siteOrderNumber: cell(row[13]) || null,
         },
       });
       imported++;
