@@ -13,6 +13,7 @@
     "process-orders": "node scripts/process-uploaded-orders.js",
     "fix-encoding": "node scripts/fix-encoding.js",
     "reimport-archive": "node scripts/reimport-from-archive.js",
+    "cleanup-reimport": "node scripts/cleanup-and-reimport.js",
     "test": "node --test --import tsx tests/working-hours.test.ts"
   },
   "dependencies": {

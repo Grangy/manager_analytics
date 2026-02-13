@@ -19,8 +19,8 @@ function hasCyrillic(s) {
 
 function looksLikeMojibake(s) {
   if (!s || typeof s !== 'string' || s.length < 2) return false;
-  if (hasCyrillic(s)) return false;
-  return /[<>?=;@:]/.test(s) && !/^[A-Za-z0-9\s\-_.,()%+]+$/.test(s);
+  if (/^[A-Za-z0-9\s\-_.,()%+]+$/.test(s)) return false;
+  return !hasCyrillic(s) && /[<>?=;@:]/.test(s);
 }
 
 /**
@@ -33,11 +33,11 @@ function reverseFixCyrillicCell(str) {
   if (!str || typeof str !== 'string') return null;
   try {
     const bytes = iconv.encode(str, 'win1251');
-    const preserve = new Set([0x20, 0x0a, 0x0d, 0x2e, 0x2c, 0x2d, 0x2f, 0x28, 0x29, 0x2b, 0x25]);
+    const preserve = new Set([0x20, 0x0a, 0x0d, 0x2e, 0x2c, 0x2d, 0x2f, 0x28, 0x29, 0x2b, 0x25, 0x2d]);
     let out = '';
     for (let i = 0; i < bytes.length; i++) {
       const b = bytes[i] & 0xFF;
-      if ((b >= 0x30 && b <= 0x39) || preserve.has(b) || (b >= 0x41 && b <= 0x5A) || (b >= 0x61 && b <= 0x7A)) {
+      if (preserve.has(b)) {
         out += String.fromCharCode(b);
       } else {
         out += String.fromCharCode(0x0400 + b);
