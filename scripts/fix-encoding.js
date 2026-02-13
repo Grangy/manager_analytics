@@ -20,9 +20,33 @@ function hasCyrillic(s) {
 function looksLikeMojibake(s) {
   if (!s || typeof s !== 'string' || s.length < 2) return false;
   if (hasCyrillic(s)) return false;
-  const extAscii = /[\x80-\xff]/.test(s);
-  const suspicious = /[<>?=;@0-9]{3,}/.test(s) || /[^\x20-\x7e\u0400-\u04ff]/.test(s);
-  return extAscii || (s.length > 3 && !/^[A-Za-z0-9\s\-_.,]+$/.test(s));
+  return /[<>?=;@:]/.test(s) && !/^[A-Za-z0-9\s\-_.,()%+]+$/.test(s);
+}
+
+/**
+ * Обратное преобразование fixCyrillicCell:
+ * UTF-8 Cyrillic -> low byte of code point -> decode(win1251) = мусор
+ * Обратно: encode(мусор, win1251) -> байты -> U+0400 + byte = Cyrillic
+ * ASCII (пробел, цифры, пунктуация) сохраняем
+ */
+function reverseFixCyrillicCell(str) {
+  if (!str || typeof str !== 'string') return null;
+  try {
+    const bytes = iconv.encode(str, 'win1251');
+    const preserve = new Set([0x20, 0x0a, 0x0d, 0x2e, 0x2c, 0x2d, 0x2f, 0x28, 0x29, 0x2b, 0x25]);
+    let out = '';
+    for (let i = 0; i < bytes.length; i++) {
+      const b = bytes[i] & 0xFF;
+      if ((b >= 0x30 && b <= 0x39) || preserve.has(b) || (b >= 0x41 && b <= 0x5A) || (b >= 0x61 && b <= 0x7A)) {
+        out += String.fromCharCode(b);
+      } else {
+        out += String.fromCharCode(0x0400 + b);
+      }
+    }
+    return out.length > 0 && hasCyrillic(out) ? out : null;
+  } catch {
+    return null;
+  }
 }
 
 function tryFix(str) {
@@ -30,15 +54,18 @@ function tryFix(str) {
   const s = str.trim();
   if (!s) return null;
 
+  let result = reverseFixCyrillicCell(s);
+  if (result) return result;
+
   const attempts = [
-    { name: 'latin1->cp1251', fn: () => iconv.decode(Buffer.from(s, 'latin1'), 'win1251') },
-    { name: 'utf8-as-cp1251', fn: () => iconv.decode(Buffer.from(s, 'utf8'), 'win1251') },
-    { name: 'cp1251-as-utf8', fn: () => iconv.encode(s, 'win1251').toString('utf8') },
+    { fn: () => iconv.decode(Buffer.from(s, 'latin1'), 'win1251') },
+    { fn: () => iconv.decode(Buffer.from(s, 'latin1'), 'cp866') },
+    { fn: () => iconv.decode(Buffer.from(s, 'latin1'), 'koi8r') },
   ];
 
-  for (const { name, fn } of attempts) {
+  for (const { fn } of attempts) {
     try {
-      const result = fn();
+      result = fn();
       if (result && hasCyrillic(result) && result.length > 0) {
         return result;
       }
