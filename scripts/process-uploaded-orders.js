@@ -182,27 +182,25 @@ function pruneArchives() {
   }
 }
 
-async function processZip(zipPath) {
-  const rawName = path.basename(zipPath);
+async function processZip(zipPath, rawName) {
   const fixedName = fixCyrillicFilename(rawName);
-  const dateStr = extractDateFromFilename(fixedName);
-  const ts = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15);
+  const dateStr = extractDateFromFilename(fixedName || rawName);
+  const ts = `${Date.now()}`.slice(-8);
   const archiveName = `orders_${dateStr}_${ts}.zip`;
-  const archivePath = path.join(ARCHIVE_DIR, archiveName);
+  const renamedPath = path.join(path.dirname(zipPath), archiveName);
 
-  let renamedPath = zipPath;
   if (rawName !== archiveName) {
-    renamedPath = path.join(path.dirname(zipPath), archiveName);
     try {
-      fs.renameSync(zipPath, renamedPath);
-      console.log(`  Переименован: ${rawName} -> ${archiveName}`);
+      const srcBuf = Buffer.from(zipPath, 'latin1');
+      fs.renameSync(srcBuf, renamedPath);
+      console.log(`  Переименован: ${fixedName || rawName} -> ${archiveName}`);
     } catch (e) {
       console.error('  Ошибка переименования:', e.message);
       return;
     }
   }
 
-  const tempDir = path.join(UPLOAD_DIR, `_tmp_${Date.now()}`);
+  const tempDir = path.join(UPLOAD_DIR, `_tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
   fs.mkdirSync(tempDir, { recursive: true });
 
   try {
@@ -237,9 +235,20 @@ async function main() {
     process.exit(1);
   }
 
-  const files = fs.readdirSync(UPLOAD_DIR)
-    .filter((f) => f.toLowerCase().endsWith('.zip'))
-    .map((f) => path.join(UPLOAD_DIR, f));
+  // latin1 сохраняет сырые байты имён (кириллица CP1251 от 1C)
+  const rawNames = fs.readdirSync(UPLOAD_DIR, { encoding: 'latin1' });
+  const files = rawNames
+    .filter((n) => n.toLowerCase().endsWith('.zip'))
+    .filter((n) => {
+      const p = path.join(UPLOAD_DIR, n);
+      try {
+        const buf = Buffer.from(p, 'latin1');
+        return fs.statSync(buf).isFile();
+      } catch {
+        return false;
+      }
+    })
+    .map((n) => ({ path: path.join(UPLOAD_DIR, n), rawName: n }));
 
   if (files.length === 0) {
     console.log('  Новых zip-файлов нет');
@@ -247,11 +256,10 @@ async function main() {
     return;
   }
 
-  for (const fp of files) {
-    console.log('  Обработка:', path.basename(fp));
+  for (const { path: fp, rawName } of files) {
+    console.log('  Обработка:', fixCyrillicFilename(rawName) || rawName);
     try {
-      await processZip(fp);
-      saveProcessedFile(fp);
+      await processZip(fp, rawName);
     } catch (e) {
       console.error('  Ошибка:', e.message);
     }
